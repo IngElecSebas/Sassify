@@ -5,9 +5,16 @@
     border-radius: 35rem;
     border: 1px solid gray;
     cursor: pointer;
-    /* background: linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.15) 100%), radial-gradient(at top center, rgba(255,255,255,0.40) 0%, rgba(0,0,0,0.40) 120%) #989898;
-    background-blend-mode: multiply,multiply; */
+    margin: 2px;
 }
+
+.RadioGroup.radio-equation { background-color: #e3f2fd; border-color: #90caf9; }
+.RadioGroup.mcq { background-color: #fff3e0; border-color: #ffcc80; }
+.RadioGroup.sft { background-color: #f3e5f5; border-color: #ce93d8; }
+.RadioGroup.array { background-color: #e8f5e9; border-color: #a5d6a7; }
+.RadioGroup.customcode { background-color: #eceff1; border-color: #b0bec5; }
+.RadioGroup.midfieldchange { background-color: #fffde7; border-color: #fff59d; }
+.RadioGroup.datacodes { background-color: #ffebee; border-color: #ef9a9a; }
 
 .InputRadio {
     cursor: pointer;
@@ -18,3 +25,4 @@
     cursor: pointer;
     font-size: 1rem;
 }
+
