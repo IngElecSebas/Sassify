@@ -36,7 +36,7 @@ const TextInput = props => {
             ) : (
                 <input
                     onChange={props.changed}
-                    className={Styles.TextInput}
+                    className={`${Styles.TextInput} ${props.questionTypeClass ? Styles[props.questionTypeClass] : ''}`}
                     value={props.value}
                     autoComplete="off"
                     type="text"

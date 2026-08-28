@@ -87,6 +87,16 @@ const textInputs = [
     }
 ];
 
+const typeToInputClassMap = {
+    'radio/equation': 'input-radio-equation',
+    'mcq': 'input-mcq',
+    'sft': 'input-sft',
+    'array': 'input-array',
+    'customcode': 'input-customcode',
+    'midfieldchange': 'input-midfieldchange',
+    'datacodes': 'input-datacodes',
+};
+
 const Question = React.memo(props => {
     const [defaultQ, updateDefaultQ] = useState('radio/equation');
     const [questionType, updateQuestionType] = useState('radio/equation');
@@ -1028,6 +1038,7 @@ const Question = React.memo(props => {
                         groupClass={'Group-' + (index + 1)}
                         label={input.label}
                         placeholder={input.placeholder}
+                        questionTypeClass={typeToInputClassMap[questionType]}
                     />
                 ))}
                 

@@ -1,27 +1,33 @@
-# Análisis del Proyecto: SassifyIn
+# Análisis del Proyecto: SassifyIn (Sassify)
 
 ## Propósito
-Aplicación web generadora de código (basada en lógica SAS) para cuestionarios.
+Aplicación web generadora de código (basada en lógica SAS) para cuestionarios y gestión rápida de parámetros.
 
-## Estructura
-- **Framework**: React 17.0.2 (Anticuado)
+## Estructura de la Aplicación
+- **Framework**: React 17.0.2
+- **Gestión de Paquetes**: `pnpm` (Seguro, rápido y eficiente)
 - **UI**: CSS Modules, Componentes funcionales.
-- **Servicios**: `axios` para API, `jwt-decode` para Auth.
-- **Herramientas**: `Monaco Editor` (para edición de código), `react-router-dom` (navegación).
+- **Servicios**: `axios` para API, `jwt-decode` para autenticación.
+- **Herramientas**: `@monaco-editor/react` (edición de código SAS), `react-router-dom` (navegación), `@fortawesome/react-fontawesome` (iconografía de la interfaz).
 
-## Componentes
-- `Questions`: Listado y tarjetas de preguntas.
-- `New Question`/`EditQuestion`: Formularios de gestión.
-- `Output`: Visualización de resultados.
-- `Login`/`ChangePassword`: Auth.
+## Componentes Principales
+- `Questions`: Listado y tarjetas de preguntas (`QuestionCard.js`, `QuestionsList.js`).
+- `New Question`/`EditQuestion`: Formularios para la gestión y carga de lógica (`NewQuestion.js`, `EditQuestion.js`).
+- `Output`: Generador y visualizador final de código SAS compilado (`Output.js`).
+- `Login`/`ChangePassword`: Módulos de autenticación (`Login.js`, `ChangePassword.js`).
+- `Store`: Archivo de base de datos local y estática con lógica base (`Store.js`).
 
-## Errores y Debilidades Detectadas
-- **Seguridad**: Existe un `useEffect` en `App.js` (líneas 60-63) que fuerza `setIsLoggedIn(true)` incondicionalmente. Esto ignora la autenticación real.
-- **Persistencia**: Uso excesivo de `localStorage` para guardar el estado de las preguntas, lo que puede causar inconsistencias.
-- **Arquitectura**: Lógica de negocio hardcodeada en `Store.js` en lugar de provenir de un endpoint o base de datos.
-- **Dependencies**: React 17.0.2 y `create-react-app` están obsoletos.
+## Debilidades Detectadas para Futura Deuda Técnica
+- **Seguridad**: `useEffect` en `App.js` fuerza `setIsLoggedIn(true)` incondicionalmente, puenteando el login del backend.
+- **Persistencia**: Depende de `localStorage` para guardar el cuestionario (fácilmente borrable o corruptible).
+- **Dependencias**: React 17 y Create React App se encuentran deprecados.
 
-## Cambios Realizados
-- **Mejora Visual (Opción B)**: Se han añadido íconos (vía FontAwesome) y colores distintivos a los botones de selección de tipo de pregunta (`Radio.js` y `Radio.module.css`) para mejorar la identificabilidad. Se ha instalado `@fortawesome/react-fontawesome` vía `pnpm`.
-
-
+## Mejoras Realizadas en esta Sesión
+1. **Migración a pnpm**: Se eliminó `package-lock.json`, se migró todo a `pnpm` (`pnpm-lock.yaml`) para evitar vulnerabilidades.
+2. **Mejora de Identificabilidad Visual (Opción B)**:
+   - Se añadieron colores pastel únicos y bordes adaptados para cada tipo de pregunta en `Radio.module.css` (para evitar equivocaciones entre "Radio" y "Array").
+   - Se integró `FontAwesomeIcon` en `Radio.js` añadiendo íconos representativos a cada tipo de pregunta (ej. list para array, dot-circle para radio/equation, database para datacodes, etc.).
+3. **Despliegue Exitoso a GitHub Pages**:
+   - Se redirigió el repositorio Git local al repositorio personal: `https://github.com/IngElecSebas/Sassify.git`.
+   - Se actualizó el campo `homepage` en `package.json` para apuntar a `https://IngElecSebas.github.io/Sassify`.
+   - Se compiló y publicó con éxito en la rama `gh-pages` usando `pnpm run deploy`.
