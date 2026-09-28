@@ -176,14 +176,28 @@ const Output = props => {
                     codeTemplate.midProcs2 += ` ,${questionCode}_other_final`
                 }
 
-                let excArr = exclusiveOption ? exclusiveOption.split(',') : [];
+                let excArr = [];
                 if (exclusiveOption) {
-                    for (let i = 0; i < excArr.length; i++) {
-                        excArr[i] = Number(excArr[i].trim());
-                    }
-                    excArr.forEach(excVal => {
-                        if (!subqarrObj.some(sq => sq.punch === excVal)) {
-                            subqarrObj.push({ punch: excVal, condition: null });
+                    let parsedExc = exclusiveOption.split(/,\s*(?![^\[]*\])/);
+                    parsedExc.forEach(excItem => {
+                        excItem = excItem.trim();
+                        let excCondition = null;
+                        let excPunchVal = excItem;
+
+                        if (excItem.includes('[')) {
+                            let parsedExcLogic = excItem.split('[');
+                            excPunchVal = parsedExcLogic[0].trim();
+                            excCondition = parsedExcLogic[1].split(']')[0].trim();
+                        }
+
+                        let nExcPunch = Number(excPunchVal);
+                        excArr.push(nExcPunch);
+
+                        let existingSq = subqarrObj.find(sq => sq.punch === nExcPunch);
+                        if (!existingSq) {
+                            subqarrObj.push({ punch: nExcPunch, condition: excCondition });
+                        } else if (excCondition && !existingSq.condition) {
+                            existingSq.condition = excCondition;
                         }
                     });
                 }

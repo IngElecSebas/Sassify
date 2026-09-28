@@ -12,6 +12,7 @@
     box-shadow: inset 1px 1px 2rem 0.1px #0000001e;
     border-radius: 0.5rem;
     border: 1px solid grey;
+    height: 28rem;
 }
 
 .QuestionsListSection::-webkit-scrollbar {
