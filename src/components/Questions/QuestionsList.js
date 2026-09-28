@@ -11,11 +11,16 @@ const QuestionsList = props => {
                 {props.questionsList.length == 0 ? (
                     <div>No questions added yet 😕</div>
                 ) : (
-                    props.questionsList.map(qObject => (
+                    props.questionsList.map((qObject, index) => (
                         <QuestionCard
                             editMode={props.editMode}
                             crossClicked={props.crossClicked}
                             editClicked={props.editClicked}
+                            moveUpClicked={props.moveUpClicked}
+                            moveDownClicked={props.moveDownClicked}
+                            duplicateClicked={props.duplicateClicked}
+                            isFirst={index === 0}
+                            isLast={index === props.questionsList.length - 1}
                             key={qObject.id}
                             qObject={qObject}
                         />

@@ -4,14 +4,27 @@ const QuestionCard = props => {
     return (
         <div className={Styles.QCardContainer}>
             {props.editMode ? null : (
+                <>
                 <div className={Styles.Cross} title="Delete" onClick={e => props.crossClicked(e, props.qObject.id)}>
                     <span>x</span>
                 </div>
-            )}
-            {props.editMode ? null : (
                 <div className={Styles.Edit} title="Edit" onClick={e => props.editClicked(e, props.qObject.id)}>
                     <img src="https://img.icons8.com/external-anggara-glyph-anggara-putra/64/000000/external-edit-basic-ui-anggara-glyph-anggara-putra.png" />
                 </div>
+                {!props.isFirst && (
+                    <div className={Styles.MoveUp} title="Move Up" onClick={e => props.moveUpClicked(props.qObject.id)}>
+                        <span>▲</span>
+                    </div>
+                )}
+                {!props.isLast && (
+                    <div className={Styles.MoveDown} title="Move Down" onClick={e => props.moveDownClicked(props.qObject.id)}>
+                        <span>▼</span>
+                    </div>
+                )}
+                <div className={Styles.InsertBtn} title="Duplicate / Insert" onClick={e => props.duplicateClicked(props.qObject.id)}>
+                    <span>+ Insert</span>
+                </div>
+                </>
             )}
             {props.qObject.questionCode ? (
                 <div className={Styles.CardGroup}>

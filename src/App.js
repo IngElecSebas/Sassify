@@ -57,10 +57,6 @@ function App() {
         }
     }, [isLoggedIn, userLoading, tokenExpiry]);
 
-    // Remove the following
-    useEffect(() => {
-        setIsLoggedIn(true);
-    })
 
     const handleLogin = (accessToken, refreshToken) => {
         if (accessToken && refreshToken) {
@@ -122,6 +118,45 @@ function App() {
         updateEditmodeQ(copylist[qIndex]);
     };
 
+    const moveUpHandler = (key) => {
+        updateQuestionsList(state => {
+            const copylist = [...state];
+            const qIndex = copylist.findIndex(obj => obj.id === key);
+            if (qIndex > 0) {
+                const temp = copylist[qIndex - 1];
+                copylist[qIndex - 1] = copylist[qIndex];
+                copylist[qIndex] = temp;
+                localStorage.setItem('questions', JSON.stringify(copylist));
+            }
+            return copylist;
+        });
+    };
+
+    const moveDownHandler = (key) => {
+        updateQuestionsList(state => {
+            const copylist = [...state];
+            const qIndex = copylist.findIndex(obj => obj.id === key);
+            if (qIndex < copylist.length - 1) {
+                const temp = copylist[qIndex + 1];
+                copylist[qIndex + 1] = copylist[qIndex];
+                copylist[qIndex] = temp;
+                localStorage.setItem('questions', JSON.stringify(copylist));
+            }
+            return copylist;
+        });
+    };
+
+    const duplicateHandler = (key) => {
+        updateQuestionsList(state => {
+            const copylist = [...state];
+            const qIndex = copylist.findIndex(obj => obj.id === key);
+            const duplicatedItem = { ...copylist[qIndex], id: Math.random().toString() };
+            copylist.splice(qIndex + 1, 0, duplicatedItem);
+            localStorage.setItem('questions', JSON.stringify(copylist));
+            return copylist;
+        });
+    };
+
     const logoutHandler = () => {
         deleteAccessToken();
         deleteRefreshToken();
@@ -162,6 +197,9 @@ function App() {
                 questionsList={[...questionsList]}
                 crossClicked={crossClickedHandler}
                 editClicked={editClickedHandler}
+                moveUpClicked={moveUpHandler}
+                moveDownClicked={moveDownHandler}
+                duplicateClicked={duplicateHandler}
             />
             <Output questionsList={questionsList} />
         </>

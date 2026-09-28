@@ -24,6 +24,8 @@
     height: 10rem;
     display: block;
     padding: 0.5rem;
+    resize: vertical;
+    overflow-y: auto;
 }
 
 .OutputTextArea::-webkit-scrollbar {

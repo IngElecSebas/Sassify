@@ -17,8 +17,10 @@ const iconMap = {
 
 const Radio = props => {
     const clicked = e => {
-        if (e.target.childElementCount !== 0) {
-            e.target.firstElementChild.click();
+        const container = e.currentTarget;
+        const input = container.querySelector('input[type="radio"]');
+        if (input && e.target !== input) {
+            input.click();
         }
     };
 

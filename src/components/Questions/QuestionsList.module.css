@@ -3,9 +3,10 @@
 }
 
 .QuestionsListSection {
-    padding: 2rem 1.75rem;
-    max-height: 30vh;
-    overflow-y: scroll;
+    padding: 2rem 1.75rem 2.5rem 2.5rem;
+    resize: vertical;
+    overflow-y: auto;
+    overflow-x: visible;
     background-color: #f7f7f7;
     margin: 2rem 0rem;
     box-shadow: inset 1px 1px 2rem 0.1px #0000001e;
