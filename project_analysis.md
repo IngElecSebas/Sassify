@@ -42,12 +42,16 @@ La aplicación está pensada para que el usuario configure la estructura del cue
 
 ## 4. Estado de las versiones
 
-- La versión anterior permanece en la rama `main` mientras no se haga un merge de la nueva versión.
-- Los cambios nuevos pueden conservarse en una rama independiente, por ejemplo `version-1.1`.
-- No se debe considerar la versión publicada hasta completar las pruebas locales y validar el código SAS generado.
-- La aplicación se está probando localmente antes de cualquier despliegue.
-- No se ha realizado un despliegue de esta versión nueva a GitHub Pages durante este trabajo.
-- La carpeta `.claude/` aparece como no rastreada en Git y corresponde a configuración local del entorno; no debe agregarse al commit de la aplicación salvo que se decida explícitamente versionarla.
+| Rama | Contenido | Estado |
+|---|---|---|
+| `main` | Versión original | Sin cambios; no se ha hecho merge de 1.1 ni 1.2 |
+| `version-1.1` | Mejoras descritas en la sección 5 | Publicada en GitHub (rama) |
+| `version-1.2` | Versión 1.1 + cambios de la sección 6 | Publicada en GitHub (rama) y **desplegada en GitHub Pages** |
+
+- Sitio en producción: https://ingelecsebas.github.io/Sassify/ (servido desde la rama `gh-pages`, generado con `pnpm run deploy` desde `version-1.2`).
+- `main` sigue conservando la versión anterior; el merge hacia `main` queda pendiente de decisión.
+- No se ha creado todavía una etiqueta (`v1.1.0` / `v1.2.0`).
+- La carpeta `.claude/` (configuración local de Claude Code, p. ej. `launch.json` para levantar `pnpm start`) vive fuera de `SassifyIn` y no forma parte del repositorio.
 
 ## 5. Cambios realizados en la versión 1.1
 
@@ -243,7 +247,72 @@ El flujo actual revisa el token, consulta `/user`, compara el usuario decodifica
 
 **Pendiente de revisión:** comprobar las rutas protegidas y el comportamiento de expiración/refresh del token en escenarios reales, además de revisar las dependencias del `useEffect` para evitar llamadas innecesarias.
 
-## 6. Correcciones y observaciones de interfaz
+## 6. Cambios realizados en la versión 1.2
+
+### 6.1 Extra Condition en Radio/Equation
+
+Archivos: `NewQuestion.js`, `EditQuestion.js`, `Output.js`, `QuestionCard.js`.
+
+- Nuevo checkbox **Add Extra Condition** (solo para Radio/Equation). Mientras no está activo, el campo no se muestra; al desactivarlo se limpia el valor.
+- El texto ingresado (campo `extraCondition`) se agrega con `&` **solo a la rama positiva** del SAS, nunca a la negación del skip logic. Por eso es una opción separada y no puede ir dentro de Skip Logic.
+
+Ejemplo con Skip Logic `Q13 in(1:7)`, opciones `1:8` y Extra Condition `Q13~=Q14`:
+
+```sas
+if (Q13 in(1:7)) & (Q14 in (1:8)) & (Q13~=Q14) then Q14_final="T    ";
+else if ~(Q13 in(1:7)) & Q14="" then Q14_final="T    ";
+else Q14_final="WRONG";
+```
+
+Sin Skip Logic:
+
+```sas
+if (Q14 in (1:8)) & (Q13~=Q14) then Q14_final="T    ";
+else Q14_final="WRONG";
+```
+
+### 6.2 Demo Refusals por pregunta
+
+Antes, las Demo Refusals se escribían a mano al final, en la tarjeta de Data Codes (`Title[QCode|punch],...`), repitiendo q-codes ya definidos. Ahora cada tarjeta tiene un checkbox **Demo Refusal**:
+
+| Tipo | Campos | Qué genera `Output.js` |
+|---|---|---|
+| Radio/Equation | Refusal Title + Refusal Punch(es) | `QCode in (punch)` usando el q-code de la tarjeta |
+| Multiple Choice | Refusal Title + Refusal Sub-Q | Variable `QCode_SubQ` con valor fijo `1` (ej. `D300_9 in (1)`) |
+| Array | Refusal Title + Refusal Punch(es) | Una fila por subpregunta (`Q20a`, `Q20b`, ...) con el mismo punch; títulos `Title_a`, `Title_b`, ... |
+| Custom Code | Demo Refusals (texto libre `Title1[QCode|99],Title2[QCode|6,9]`) | Mismo formato de antes, pensado para templates con varios códigos (ej. G1) |
+
+Campos nuevos en el objeto de pregunta: `demoRefusalTitle`, `demoRefusalPunch`, `demoRefusalSubQ` (y `demoRefusals` pasa a usarse solo en Custom Code).
+
+Implementación en `Output.js`:
+
+1. Antes del loop principal se hace un **pre-escaneo** de todas las tarjetas que arma una lista `demoRefusalItems` (`{ titleText, questionNumber, answerOptions }`), sin importar el orden de las tarjetas.
+2. El caso `datacodes` genera el reporte "Demo Refusals Summary" a partir de esa lista con el mismo código de salida de antes.
+3. El parseo de subpreguntas de Array se extrajo a la función `parseArraySubcodes`, reutilizada por la generación del Array y por el pre-escaneo. Los sufijos con skip logic entre corchetes (`a[...]`) se limpian para nombrar la variable.
+
+Restricciones conocidas:
+
+- En Array el punch de refusal es el mismo para todas las subpreguntas; si una subpregunta necesita otro punch, hay que declararla vía Custom Code.
+- En MCQ se admite una sola subpregunta de refusal por tarjeta.
+- Los nombres generados (`QCode_SubQ`, `QCode+subq`) deben respetar el límite de 32 caracteres de SAS.
+
+### 6.3 Data Codes → Language Q Code
+
+- El tipo `datacodes` se muestra ahora como **Language Q Code** (la clave interna `datacodes` no cambia).
+- Se eliminó su campo de Demo Refusals; solo queda el Language Q Code.
+- Sigue generando automáticamente los chequeos de duplicados (token/ID), el resumen de fechas y, si hay refusals en las tarjetas, el reporte de Demo Refusals.
+
+### 6.4 Confirmación en Clear All
+
+`clearStorageHandler` (`App.js`) pide confirmación con `window.confirm('Are you sure?')` antes de borrar el cuestionario de `localStorage`.
+
+### 6.5 Correcciones de layout
+
+- **Botón Add Question/Save Question:** estaba en `position: absolute; bottom: 1rem` y se superponía a los campos cuando el formulario crecía. Ahora está en flujo normal (`display: flex; justify-content: center`) en `NewQuestion.module.css` y `EditQuestion.module.css`.
+- **Editor Monaco (Custom SAS Code):** `.Editor` era absoluto con altura en porcentaje y había una regla global `label[for='custom']` en `App.css` que movía el label. Se eliminó esa regla; el editor tiene altura fija (`12rem`) en flujo normal y el grupo ocupa las dos columnas con el label arriba (`TextInput.module.css`).
+- **Advertencia ResizeObserver:** al poner el editor en flujo normal, Monaco dispara `ResizeObserver loop completed with undelivered notifications`, que el overlay de desarrollo de CRA mostraba como error bloqueante. Se silencia con un listener en `public/index.html` (debe estar ahí para ejecutarse antes que el overlay). Es una advertencia inofensiva y no afecta producción.
+
+## 7. Correcciones y observaciones de interfaz
 
 - Los controles de movimiento se muestran mediante `opacity` al pasar el cursor sobre la tarjeta.
 - Los controles están diferenciados de las acciones existentes de editar y eliminar.
@@ -251,29 +320,45 @@ El flujo actual revisa el token, consulta `/user`, compara el usuario decodifica
 - Se aumentó el espacio entre tarjetas para evitar solapamiento visual.
 - El área de la lista debe revisarse en pantallas pequeñas, porque los controles posicionados lateralmente necesitan espacio horizontal suficiente.
 
-## 7. Persistencia actual
+## 8. Persistencia actual
 
-El cuestionario continúa guardándose en `localStorage`:
+El cuestionario continúa guardándose en `localStorage`. Desde la 1.2 cada pregunta puede incluir además `extraCondition`, `demoRefusalTitle`, `demoRefusalPunch` y `demoRefusalSubQ`; las preguntas guardadas con versiones anteriores siguen funcionando porque `Output.js` trata esos campos como vacíos si no existen.
 
 - Agregar una pregunta actualiza la lista local.
 - Editar una pregunta actualiza la posición correspondiente.
 - Eliminar una pregunta persiste la lista resultante.
 - Reordenar preguntas guarda inmediatamente el nuevo orden.
 - Insertar/duplicar una pregunta guarda el nuevo arreglo.
-- `Clear All` elimina la clave `questions` y recarga la página.
+- `Clear All` pide confirmación, elimina la clave `questions` y recarga la página.
 
 `localStorage` no es una base de datos segura: puede ser eliminado, alterado o quedar corrupto. Esto debe considerarse una solución local/provisional.
 
-## 8. Verificación realizada y pendientes
+## 9. Verificación realizada y pendientes
 
-### Verificación realizada
+### Verificación realizada (1.1)
 
 - Se identificó y corrigió el error runtime del selector de tipos de pregunta.
 - Se revisó visualmente el problema de `Move Down` y se ajustó su posición CSS.
 - Se añadieron los handlers y props necesarios para mover y duplicar tarjetas.
 - Se mantuvo la compatibilidad del parser con formatos de opciones simples.
 
-### Pendientes antes de considerar estable la versión 1.1
+### Verificación realizada (1.2)
+
+Probado en el navegador con `pnpm start` y en producción:
+
+- Extra Condition con y sin Skip Logic; al desmarcar se elimina del SAS; se recarga correctamente al editar.
+- Demo Refusals con el ejemplo de G1: Radio (`Party[P1Y|4]`), MCQ (`Race` → `D300_9|1`), Array (`Q20` con `a:c` → 3 filas) y Custom Code (`YearBorn[D101|9999],Hispanic[D301|3]`); el reporte final coincide con el formato anterior.
+- Modo edición carga checkbox y valores de Demo Refusal.
+- Sin superposiciones del botón en Radio, MCQ, Array y Custom Code; el editor Monaco queda debajo de su label; Expand/Minimize funcionan.
+- `pnpm run build` compila sin errores (solo advertencias de lint ya existentes) y el despliegue en GitHub Pages sirve la nueva versión.
+
+### Pendientes antes de considerar estable la versión 1.2
+
+1. Validar en SAS real el reporte de Demo Refusals generado para MCQ y Array.
+2. Probar en el navegador el botón **Yes** de la confirmación de Clear All (en las pruebas automatizadas solo se pudo verificar el caso **Cancel**).
+3. Revisar el layout de la tarjeta en pantallas pequeñas con los nuevos checkboxes.
+
+### Pendientes heredados de la versión 1.1
 
 1. Ejecutar `pnpm start` y recorrer la aplicación en el navegador.
 2. Crear varias tarjetas y verificar `Move Up`, `Move Down` y `+ Insert`.
@@ -288,7 +373,11 @@ El cuestionario continúa guardándose en `localStorage`:
 11. Probar login, logout, expiración y renovación de tokens.
 12. Revisar accesibilidad: navegación con teclado, foco visible, etiquetas y botones.
 
-## 9. Deuda técnica pendiente
+## 10. Deuda técnica pendiente
+
+- **Formularios duplicados:** `NewQuestion.js` y `EditQuestion.js` son casi idénticos (~1100 líneas cada uno); cualquier cambio debe replicarse en ambos. Conviene unificarlos en un solo componente.
+- **Estado mutable a nivel de módulo:** el arreglo `textInputs` se muta con `splice`/`push` en cada render para mostrar u ocultar campos según el tipo. Es frágil; debería derivarse del estado en cada render.
+- **Clase `undefined`:** `TextInput.js` concatena `Styles[props.groupClass]`, que es `undefined` para casi todos los grupos (solo existe `.Group-3`). Es inofensivo pero conviene limpiarlo.
 
 - **Persistencia:** migrar el cuestionario de `localStorage` a una API o almacenamiento persistente con validación.
 - **Autenticación:** revisar completamente la protección de rutas, expiración y renovación de tokens.
@@ -302,24 +391,30 @@ El cuestionario continúa guardándose en `localStorage`:
 - **Accesibilidad:** revisar los `id` repetidos en tarjetas y la interacción de controles que solo aparecen con `hover`.
 - **Producción:** establecer una validación completa en modo producción antes de desplegar.
 
-## 10. Flujo Git recomendado para la versión adicional
+## 11. Flujo Git y despliegue
 
-Para mantener intacta la versión anterior:
-
-```powershell
-git switch -c version-1.1
-git add project_analysis.md src
-git commit -m "feat: completar mejoras de la versión 1.1
-
-Co-Authored-By: Claude Code <noreply@anthropic.com>"
-git push -u origin version-1.1
-```
-
-La rama `main` conservará la versión anterior mientras la nueva versión se prueba en `version-1.1`. Después de validar la aplicación se puede crear una etiqueta:
+Cada versión vive en su propia rama creada desde la anterior (`version-1.1` → `version-1.2`), y `main` conserva la versión original.
 
 ```powershell
-git tag -a v1.1.0 -m "Sassify versión 1.1.0"
-git push origin v1.1.0
+git switch -c version-1.2
+git add <archivos>
+git commit -m "feat: ..."
+git push -u origin version-1.2
 ```
 
-El merge hacia `main` debe hacerse únicamente después de completar la validación local y revisar el diff final.
+Despliegue a GitHub Pages (desde la rama que se quiera publicar):
+
+```powershell
+pnpm run deploy
+```
+
+`deploy` ejecuta `predeploy` (`pnpm run build`) y luego `gh-pages -d build`, que publica la carpeta `build` en la rama `gh-pages`. El sitio se actualiza en 1–2 minutos en https://ingelecsebas.github.io/Sassify/ (usa Ctrl+F5 si el navegador muestra la versión anterior).
+
+Opcional, después de validar:
+
+```powershell
+git tag -a v1.2.0 -m "Sassify versión 1.2.0"
+git push origin v1.2.0
+```
+
+El merge hacia `main` debe hacerse únicamente después de completar la validación y revisar el diff final.
