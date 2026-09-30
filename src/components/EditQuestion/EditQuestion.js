@@ -38,7 +38,7 @@ const questionCategories = [
     {
         id: new Date().toISOString() + Math.random(),
         category: 'datacodes',
-        label: 'Data Codes',
+        label: 'Language Q Code',
     }
 ];
 
@@ -104,6 +104,18 @@ const EditQuestion = React.memo(props => {
     const [answerOptions, updateAnswerOptions] = useState(props.editModeQ.answerOptions);
     const [subQuestions, updatesubQuestions] = useState(props.editModeQ.subQuestions);
     const [skipLogic, updateSkipLogic] = useState(props.editModeQ.skipLogic);
+    const [extraCondition, updateExtraCondition] = useState(props.editModeQ.extraCondition || '');
+    const [useExtraCondition, updateUseExtraCondition] = useState(Boolean(props.editModeQ.extraCondition));
+    const [demoRefusalTitle, updateDemoRefusalTitle] = useState(props.editModeQ.demoRefusalTitle || '');
+    const [demoRefusalPunch, updateDemoRefusalPunch] = useState(props.editModeQ.demoRefusalPunch || '');
+    const [demoRefusalSubQ, updateDemoRefusalSubQ] = useState(props.editModeQ.demoRefusalSubQ || '');
+    const [useDemoRefusal, updateUseDemoRefusal] = useState(
+        Boolean(
+            props.editModeQ.demoRefusalTitle ||
+                props.editModeQ.demoRefusalSubQ ||
+                (props.editModeQ.questionType === 'customcode' && props.editModeQ.demoRefusals)
+        )
+    );
     const [otherCode, updateOtherCode] = useState(props.editModeQ.otherCode);
     const [customCode, updateCustomCode] = useState(props.editModeQ.customCode);
     const [exclusiveOption, updateExclusiveOption] = useState(props.editModeQ.exclusiveOption);
@@ -128,6 +140,36 @@ const EditQuestion = React.memo(props => {
     let slIndex = textInputs.findIndex(obj => obj.category === 'slogic');
     if (slIndex != -1) {
         textInputs[slIndex].value = skipLogic;
+    }
+
+    let ecIndex = textInputs.findIndex(obj => obj.category === 'extraCondition');
+    if (ecIndex != -1) {
+        textInputs[ecIndex].value = extraCondition;
+    }
+    if (defaultQ !== 'radio/equation' && ecIndex !== -1) {
+        textInputs.splice(ecIndex, 1);
+    }
+
+    let drtIndex = textInputs.findIndex(obj => obj.category === 'demoRefusalTitle');
+    if (drtIndex != -1) {
+        textInputs[drtIndex].value = demoRefusalTitle;
+    }
+    let drpIndex = textInputs.findIndex(obj => obj.category === 'demoRefusalPunch');
+    if (drpIndex != -1) {
+        textInputs[drpIndex].value = demoRefusalPunch;
+    }
+    let drsIndex = textInputs.findIndex(obj => obj.category === 'demoRefusalSubQ');
+    if (drsIndex != -1) {
+        textInputs[drsIndex].value = demoRefusalSubQ;
+    }
+    if (!['radio/equation', 'mcq', 'array'].includes(defaultQ) && drtIndex !== -1) {
+        textInputs.splice(drtIndex, 1);
+    }
+    if (!['radio/equation', 'array'].includes(defaultQ) && drpIndex !== -1) {
+        textInputs.splice(drpIndex, 1);
+    }
+    if (defaultQ !== 'mcq' && drsIndex !== -1) {
+        textInputs.splice(drsIndex, 1);
     }
 
     let exIndex = textInputs.findIndex(obj => obj.category === 'exclusive');
@@ -184,6 +226,23 @@ const EditQuestion = React.memo(props => {
         updateQuestionType(state => {
             return e.target.value;
         });
+    };
+
+    const extraConditionToggleHandler = e => {
+        updateUseExtraCondition(e.target.checked);
+        if (!e.target.checked) {
+            updateExtraCondition('');
+        }
+    };
+
+    const demoRefusalToggleHandler = e => {
+        updateUseDemoRefusal(e.target.checked);
+        if (!e.target.checked) {
+            updateDemoRefusalTitle('');
+            updateDemoRefusalPunch('');
+            updateDemoRefusalSubQ('');
+            updateDemoRefusals('');
+        }
     };
 
     if (defaultQ === 'radio/equation') {
@@ -283,6 +342,54 @@ const EditQuestion = React.memo(props => {
                 asterick: false,
                 value: otherCode,
             });
+        }
+        if (useExtraCondition) {
+            if (textInputs.findIndex(obj => obj.category === 'extraCondition') === -1) {
+                textInputs.push({
+                    id: new Date().toISOString() + Math.random(),
+                    category: 'extraCondition',
+                    label: 'Extra Condition:',
+                    placeholder: 'e.g. Q13~=Q14',
+                    asterick: false,
+                    value: extraCondition,
+                });
+            }
+        } else {
+            let currentEcIndex = textInputs.findIndex(obj => obj.category === 'extraCondition');
+            if (currentEcIndex !== -1) {
+                textInputs.splice(currentEcIndex, 1);
+            }
+        }
+        if (useDemoRefusal) {
+            if (textInputs.findIndex(obj => obj.category === 'demoRefusalTitle') === -1) {
+                textInputs.push({
+                    id: new Date().toISOString() + Math.random(),
+                    category: 'demoRefusalTitle',
+                    label: 'Refusal Title:',
+                    placeholder: 'e.g. Party',
+                    asterick: false,
+                    value: demoRefusalTitle,
+                });
+            }
+            if (textInputs.findIndex(obj => obj.category === 'demoRefusalPunch') === -1) {
+                textInputs.push({
+                    id: new Date().toISOString() + Math.random(),
+                    category: 'demoRefusalPunch',
+                    label: 'Refusal Punch(es):',
+                    placeholder: 'e.g. 99 or 6,9',
+                    asterick: false,
+                    value: demoRefusalPunch,
+                });
+            }
+        } else {
+            let currentDrtIndex = textInputs.findIndex(obj => obj.category === 'demoRefusalTitle');
+            if (currentDrtIndex !== -1) {
+                textInputs.splice(currentDrtIndex, 1);
+            }
+            let currentDrpIndex = textInputs.findIndex(obj => obj.category === 'demoRefusalPunch');
+            if (currentDrpIndex !== -1) {
+                textInputs.splice(currentDrpIndex, 1);
+            }
         }
     }
 
@@ -391,6 +498,37 @@ const EditQuestion = React.memo(props => {
             let b = textInputs[thesqIndex];
             textInputs[thesqIndex] = textInputs[2];
             textInputs[2] = b;
+        }
+        if (useDemoRefusal) {
+            if (textInputs.findIndex(obj => obj.category === 'demoRefusalTitle') === -1) {
+                textInputs.push({
+                    id: new Date().toISOString() + Math.random(),
+                    category: 'demoRefusalTitle',
+                    label: 'Refusal Title:',
+                    placeholder: 'e.g. Race',
+                    asterick: false,
+                    value: demoRefusalTitle,
+                });
+            }
+            if (textInputs.findIndex(obj => obj.category === 'demoRefusalSubQ') === -1) {
+                textInputs.push({
+                    id: new Date().toISOString() + Math.random(),
+                    category: 'demoRefusalSubQ',
+                    label: 'Refusal Sub-Q:',
+                    placeholder: 'e.g. 9',
+                    asterick: false,
+                    value: demoRefusalSubQ,
+                });
+            }
+        } else {
+            let currentDrtIndex = textInputs.findIndex(obj => obj.category === 'demoRefusalTitle');
+            if (currentDrtIndex !== -1) {
+                textInputs.splice(currentDrtIndex, 1);
+            }
+            let currentDrsIndex = textInputs.findIndex(obj => obj.category === 'demoRefusalSubQ');
+            if (currentDrsIndex !== -1) {
+                textInputs.splice(currentDrsIndex, 1);
+            }
         }
     }
     if (defaultQ === 'sft') {
@@ -544,12 +682,6 @@ const EditQuestion = React.memo(props => {
                     textInputs.findIndex(obj => obj.category === 'language'),
                     1
                 );
-        demoIndex === -1
-              ? textInputs.splice(0, 0)
-              : textInputs.splice(
-                    textInputs.findIndex(obj => obj.category === 'demorefusal'),
-                    1
-                );
         if (qcIndex == -1) {
             textInputs.push({
                 id: new Date().toISOString() + Math.random(),
@@ -572,6 +704,23 @@ const EditQuestion = React.memo(props => {
                 value: customCode,
                 asterick: true,
             });
+        }
+        if (useDemoRefusal) {
+            if (demoIndex == -1) {
+                textInputs.push({
+                    id: new Date().toISOString() + Math.random(),
+                    category: 'demorefusal',
+                    label: 'Demo Refusals:',
+                    placeholder: 'Title1[QCode|99],Title2[QCode|6,9], ...',
+                    asterick: false,
+                    value: demoRefusals,
+                });
+            }
+        } else {
+            let currentDemoIndex = textInputs.findIndex(obj => obj.category === 'demorefusal');
+            if (currentDemoIndex !== -1) {
+                textInputs.splice(currentDemoIndex, 1);
+            }
         }
     }
     if (defaultQ === 'array') {
@@ -676,6 +825,37 @@ const EditQuestion = React.memo(props => {
                 asterick: false,
                 value: skipLogic,
             });
+        }
+        if (useDemoRefusal) {
+            if (textInputs.findIndex(obj => obj.category === 'demoRefusalTitle') === -1) {
+                textInputs.push({
+                    id: new Date().toISOString() + Math.random(),
+                    category: 'demoRefusalTitle',
+                    label: 'Refusal Title:',
+                    placeholder: 'e.g. VoteHistory',
+                    asterick: false,
+                    value: demoRefusalTitle,
+                });
+            }
+            if (textInputs.findIndex(obj => obj.category === 'demoRefusalPunch') === -1) {
+                textInputs.push({
+                    id: new Date().toISOString() + Math.random(),
+                    category: 'demoRefusalPunch',
+                    label: 'Refusal Punch(es):',
+                    placeholder: 'Shared across all subquestions, e.g. 9',
+                    asterick: false,
+                    value: demoRefusalPunch,
+                });
+            }
+        } else {
+            let currentDrtIndex = textInputs.findIndex(obj => obj.category === 'demoRefusalTitle');
+            if (currentDrtIndex !== -1) {
+                textInputs.splice(currentDrtIndex, 1);
+            }
+            let currentDrpIndex = textInputs.findIndex(obj => obj.category === 'demoRefusalPunch');
+            if (currentDrpIndex !== -1) {
+                textInputs.splice(currentDrpIndex, 1);
+            }
         }
     }
     if (defaultQ === 'midfieldchange') {
@@ -835,16 +1015,12 @@ const EditQuestion = React.memo(props => {
               textInputs.findIndex(obj => obj.category === 'newLogic'),
               1
           );
-        if (demoIndex == -1) {
-            textInputs.push({
-                id: new Date().toISOString() + Math.random(),
-                category: 'demorefusal',
-                label: 'Demo Refusals:',
-                placeholder: 'Title1[QCode|99],Title2[QCode|6,9], ...',
-                asterick: false,
-                value: demoRefusals
-            });
-        }
+        demoIndex === -1
+            ? textInputs.splice(0, 0)
+            : textInputs.splice(
+                  textInputs.findIndex(obj => obj.category === 'demorefusal'),
+                  1
+              );
         if (langIndex == -1) {
             textInputs.push({
                 id: new Date().toISOString() + Math.random(),
@@ -868,6 +1044,18 @@ const EditQuestion = React.memo(props => {
             }
             if (e.target.id && e.target.id === 'slogic') {
                 updateSkipLogic(e.target.value);
+            }
+            if (e.target.id && e.target.id === 'extraCondition') {
+                updateExtraCondition(e.target.value);
+            }
+            if (e.target.id && e.target.id === 'demoRefusalTitle') {
+                updateDemoRefusalTitle(e.target.value);
+            }
+            if (e.target.id && e.target.id === 'demoRefusalPunch') {
+                updateDemoRefusalPunch(e.target.value);
+            }
+            if (e.target.id && e.target.id === 'demoRefusalSubQ') {
+                updateDemoRefusalSubQ(e.target.value);
             }
             if (e.target.id && e.target.id === 'other') {
                 updateOtherCode(e.target.value);
@@ -920,6 +1108,7 @@ const EditQuestion = React.memo(props => {
                 questionCode,
                 answerOptions,
                 skipLogic,
+                extraCondition,
                 otherCode,
                 exclusiveOption,
                 subQuestions,
@@ -930,9 +1119,17 @@ const EditQuestion = React.memo(props => {
                 changeDate,
                 langQ,
                 demoRefusals,
+                demoRefusalTitle,
+                demoRefusalPunch,
+                demoRefusalSubQ,
                 index,
             };
             if (questionType === 'radio/equation') {
+                newQuestion.extraCondition = useExtraCondition ? extraCondition : '';
+                newQuestion.demoRefusalTitle = useDemoRefusal ? demoRefusalTitle : '';
+                newQuestion.demoRefusalPunch = useDemoRefusal ? demoRefusalPunch : '';
+                newQuestion.demoRefusalSubQ = '';
+                newQuestion.demoRefusals = '';
                 newQuestion.exclusiveOption = '';
                 newQuestion.subQuestions = '';
                 newQuestion.customCode = '';
@@ -943,6 +1140,11 @@ const EditQuestion = React.memo(props => {
             } else if (questionType === 'sft') {
                 newQuestion.answerOptions = '';
                 newQuestion.otherCode = '';
+                newQuestion.extraCondition = '';
+                newQuestion.demoRefusalTitle = '';
+                newQuestion.demoRefusalPunch = '';
+                newQuestion.demoRefusalSubQ = '';
+                newQuestion.demoRefusals = '';
                 newQuestion.exclusiveOption = '';
                 newQuestion.subQuestions = '';
                 newQuestion.customCode = '';
@@ -952,6 +1154,11 @@ const EditQuestion = React.memo(props => {
                 newQuestion.changeDate = '';
             } else if (questionType === 'array') {
                 newQuestion.otherCode = '';
+                newQuestion.extraCondition = '';
+                newQuestion.demoRefusalTitle = useDemoRefusal ? demoRefusalTitle : '';
+                newQuestion.demoRefusalPunch = useDemoRefusal ? demoRefusalPunch : '';
+                newQuestion.demoRefusalSubQ = '';
+                newQuestion.demoRefusals = '';
                 newQuestion.exclusiveOption = '';
                 newQuestion.customCode = '';
                 newQuestion.minMax = '';
@@ -960,6 +1167,11 @@ const EditQuestion = React.memo(props => {
                 newQuestion.changeDate = '';
             } else if (questionType === 'mcq') {
                 newQuestion.answerOptions = '';
+                newQuestion.extraCondition = '';
+                newQuestion.demoRefusalTitle = useDemoRefusal ? demoRefusalTitle : '';
+                newQuestion.demoRefusalPunch = '';
+                newQuestion.demoRefusalSubQ = useDemoRefusal ? demoRefusalSubQ : '';
+                newQuestion.demoRefusals = '';
                 newQuestion.customCode = '';
                 newQuestion.oldLogic = '';
                 newQuestion.newLogic = '';
@@ -967,6 +1179,11 @@ const EditQuestion = React.memo(props => {
             } else if (questionType === 'customcode') {
                 newQuestion.answerOptions = '';
                 newQuestion.skipLogic = '';
+                newQuestion.extraCondition = '';
+                newQuestion.demoRefusalTitle = '';
+                newQuestion.demoRefusalPunch = '';
+                newQuestion.demoRefusalSubQ = '';
+                newQuestion.demoRefusals = useDemoRefusal ? demoRefusals : '';
                 newQuestion.otherCode = '';
                 newQuestion.exclusiveOption = '';
                 newQuestion.subQuestions = '';
@@ -977,6 +1194,11 @@ const EditQuestion = React.memo(props => {
             } else if (questionType === 'midfieldchange') {
                 newQuestion.answerOptions = '';
                 newQuestion.skipLogic = '';
+                newQuestion.extraCondition = '';
+                newQuestion.demoRefusalTitle = '';
+                newQuestion.demoRefusalPunch = '';
+                newQuestion.demoRefusalSubQ = '';
+                newQuestion.demoRefusals = '';
                 newQuestion.otherCode = '';
                 newQuestion.exclusiveOption = '';
                 newQuestion.subQuestions = '';
@@ -985,6 +1207,11 @@ const EditQuestion = React.memo(props => {
             } else if (questionType ==='datacodes') {
                 newQuestion.questionCode='';
                 newQuestion.answerOptions = '';
+                newQuestion.extraCondition = '';
+                newQuestion.demoRefusalTitle = '';
+                newQuestion.demoRefusalPunch = '';
+                newQuestion.demoRefusalSubQ = '';
+                newQuestion.demoRefusals = '';
                 newQuestion.otherCode = '';
                 newQuestion.exclusiveOption = '';
                 newQuestion.subQuestions = '';
@@ -999,6 +1226,12 @@ const EditQuestion = React.memo(props => {
             updateQuestionCode('');
             updateAnswerOptions('');
             updateSkipLogic('');
+            updateExtraCondition('');
+            updateUseExtraCondition(false);
+            updateUseDemoRefusal(false);
+            updateDemoRefusalTitle('');
+            updateDemoRefusalPunch('');
+            updateDemoRefusalSubQ('');
             updateOtherCode('');
             updateExclusiveOption('');
             updatesubQuestions('');
@@ -1028,6 +1261,33 @@ const EditQuestion = React.memo(props => {
                     />
                 ))}
             </div>
+            {(defaultQ === 'radio/equation' ||
+                defaultQ === 'mcq' ||
+                defaultQ === 'array' ||
+                defaultQ === 'customcode') && (
+                <div className={Styles.CheckboxGroup}>
+                    {defaultQ === 'radio/equation' && (
+                        <label className={Styles.CheckboxLabel} htmlFor="useExtraCondition">
+                            <input
+                                type="checkbox"
+                                id="useExtraCondition"
+                                checked={useExtraCondition}
+                                onChange={extraConditionToggleHandler}
+                            />
+                            Add Extra Condition
+                        </label>
+                    )}
+                    <label className={Styles.CheckboxLabel} htmlFor="useDemoRefusal">
+                        <input
+                            type="checkbox"
+                            id="useDemoRefusal"
+                            checked={useDemoRefusal}
+                            onChange={demoRefusalToggleHandler}
+                        />
+                        Demo Refusal
+                    </label>
+                </div>
+            )}
             <div className={Styles.TextInputContainer}>
                 {textInputs.map((input, index) => (
                     <TextInput

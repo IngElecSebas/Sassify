@@ -164,8 +164,10 @@ function App() {
     };
 
     const clearStorageHandler = () => {
-        localStorage.removeItem('questions');
-        document.location.reload();
+        if (window.confirm('Are you sure?')) {
+            localStorage.removeItem('questions');
+            document.location.reload();
+        }
     };
 
     const NavigateChangePass = () => {

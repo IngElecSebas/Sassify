@@ -11,6 +11,42 @@ const codeTemplate = {
     finalCheck:''
 };
 
+const parseArraySubcodes = subQuestionsStr => {
+    let parsedsubQArr = subQuestionsStr.split(/,\s*(?![^()]*\))/);
+    let subqarrArr = [];
+    for (let i = 0; i < parsedsubQArr.length; i++) {
+        if (
+            parsedsubQArr[i].includes(':') &&
+            !(parsedsubQArr[i].includes('(') || parsedsubQArr[i].includes(')'))
+        ) {
+            let values = parsedsubQArr[i].trim().split(':');
+            let startVal = null;
+            let endVal = null;
+            if (
+                values[0].length === 1 &&
+                values[0].toLowerCase().match(/[a-z]/i) &&
+                values[1].length === 1 &&
+                values[1].toLowerCase().match(/[a-z]/i)
+            ) {
+                startVal = values[0].toLowerCase().charCodeAt(0);
+                endVal = values[1].toLowerCase().charCodeAt(0);
+                for (let itr = startVal; itr <= endVal; itr++) {
+                    subqarrArr.push(String.fromCharCode(itr));
+                }
+            } else {
+                startVal = Number(values[0]);
+                endVal = Number(values[1]);
+                for (let itr = startVal; itr <= endVal; itr++) {
+                    subqarrArr.push(itr.toString());
+                }
+            }
+        } else {
+            subqarrArr.push(parsedsubQArr[i].toLowerCase().trim());
+        }
+    }
+    return subqarrArr;
+};
+
 const Output = props => {
     const [finalCode, updateFinalCode] = useState(codeTemplate.initialProcs);
     const ref = useRef(null);
@@ -18,12 +54,61 @@ const Output = props => {
     let datacodes='';
     codeTemplate.midProcs2 = `select distinct `;
 
+    let demoRefusalItems = [];
+    for (let key in Object.keys(props.questionsList)) {
+        const q = props.questionsList[key];
+        const qType = q.questionType;
+        const qCode = (q.questionCode || '').trim();
+
+        if (qType === 'radio/equation' && q.demoRefusalTitle && q.demoRefusalPunch) {
+            demoRefusalItems.push({
+                titleText: q.demoRefusalTitle.trim(),
+                questionNumber: qCode,
+                answerOptions: q.demoRefusalPunch.split(',').map(v => v.trim()),
+            });
+        }
+        if (qType === 'mcq' && q.demoRefusalTitle && q.demoRefusalSubQ) {
+            demoRefusalItems.push({
+                titleText: q.demoRefusalTitle.trim(),
+                questionNumber: `${qCode}_${q.demoRefusalSubQ.trim()}`,
+                answerOptions: ['1'],
+            });
+        }
+        if (qType === 'array' && q.demoRefusalTitle && q.demoRefusalPunch) {
+            let subcodes = parseArraySubcodes((q.subQuestions || '').trim());
+            let punches = q.demoRefusalPunch.split(',').map(v => v.trim());
+            subcodes.forEach(subq => {
+                let cleanSubq = subq.includes('[') ? subq.split('[')[0].trim() : subq;
+                demoRefusalItems.push({
+                    titleText: `${q.demoRefusalTitle.trim()}_${cleanSubq}`,
+                    questionNumber: `${qCode}${cleanSubq}`,
+                    answerOptions: punches,
+                });
+            });
+        }
+        if (qType === 'customcode' && q.demoRefusals) {
+            const pattern = /([^[]+)\[([^|]+)\|([^\]]+)\]/;
+            const titleItems = q.demoRefusals.trim().split(/,(?![^\[\]]*\])/);
+            titleItems.forEach(item => {
+                const match = item.match(pattern);
+                if (match) {
+                    demoRefusalItems.push({
+                        titleText: match[1].trim(),
+                        questionNumber: match[2].trim(),
+                        answerOptions: match[3].split(',').map(v => v.trim()),
+                    });
+                }
+            });
+        }
+    }
+
     for (let key in Object.keys(props.questionsList)) {
         let {
             questionType,
             questionCode,
             answerOptions,
             skipLogic,
+            extraCondition,
             otherCode,
             exclusiveOption,
             subQuestions,
@@ -32,13 +117,13 @@ const Output = props => {
             oldLogic,
             newLogic,
             changeDate,
-            langQ,
-            demoRefusals
+            langQ
         } = props.questionsList[key];
 
         questionCode = questionCode.trim();
         answerOptions = answerOptions.trim();
         skipLogic = skipLogic.trim();
+        extraCondition = (extraCondition || '').trim();
         otherCode = Number(otherCode.trim());
         exclusiveOption = exclusiveOption.trim();
         subQuestions = subQuestions.trim();
@@ -46,7 +131,6 @@ const Output = props => {
         changeDate = changeDate.trim();
         newLogic = newLogic.trim();
         langQ=langQ.trim();
-        demoRefusals=demoRefusals.trim();
 
         let modeOptions = answerOptions.split('|');
         let modeSwitch = modeOptions.length > 1;
@@ -99,15 +183,16 @@ const Output = props => {
                 }
 
                 let combinedExpr = modeExprs.join(' OR ');
+                let extraCond = extraCondition ? ` & (${extraCondition})` : '';
 
                 if (skipLogic) {
                     let nullCheck = otherCode
                         ? `${questionCode}="" & ${questionCode}_other=""`
                         : `${questionCode}=""`;
 
-                    code += `if (${skipLogic}) & (${combinedExpr}) then ${questionCode}_final="${codeTemplate.true}"; \nelse if ~(${skipLogic}) & ${nullCheck} then ${questionCode}_final="${codeTemplate.true}";\nelse ${questionCode}_final="${codeTemplate.false}";\n\n`;
+                    code += `if (${skipLogic}) & (${combinedExpr})${extraCond} then ${questionCode}_final="${codeTemplate.true}"; \nelse if ~(${skipLogic}) & ${nullCheck} then ${questionCode}_final="${codeTemplate.true}";\nelse ${questionCode}_final="${codeTemplate.false}";\n\n`;
                 } else {
-                    code += `if (${combinedExpr}) then ${questionCode}_final="${codeTemplate.true}"; \nelse ${questionCode}_final="${codeTemplate.false}";\n\n`;
+                    code += `if (${combinedExpr})${extraCond} then ${questionCode}_final="${codeTemplate.true}"; \nelse ${questionCode}_final="${codeTemplate.false}";\n\n`;
                 }
 
                 codeTemplate.midProcs2 += `, ${questionCode}_final`;
@@ -276,38 +361,7 @@ const Output = props => {
                 break;
             case 'array':
                 let subqstrArr = subQuestions;
-                let parsedsubQArr = subqstrArr.split(/,\s*(?![^()]*\))/);
-                let subqarrArr = [];
-                for (let i = 0; i < parsedsubQArr.length; i++) {
-                    if (
-                        parsedsubQArr[i].includes(':') &&
-                        !(parsedsubQArr[i].includes('(') || parsedsubQArr[i].includes(')'))
-                    ) {
-                        let values = parsedsubQArr[i].trim().split(':');
-                        let startVal = null;
-                        let endVal = null;
-                        if (
-                            values[0].length === 1 &&
-                            values[0].toLowerCase().match(/[a-z]/i) &&
-                            values[1].length === 1 &&
-                            values[1].toLowerCase().match(/[a-z]/i)
-                        ) {
-                            startVal = values[0].toLowerCase().charCodeAt(0);
-                            endVal = values[1].toLowerCase().charCodeAt(0);
-                            for (let itr = startVal; itr <= endVal; itr++) {
-                                subqarrArr.push(String.fromCharCode(itr));
-                            }
-                        } else {
-                            startVal = Number(values[0]);
-                            endVal = Number(values[1]);
-                            for (let itr = startVal; itr <= endVal; itr++) {
-                                subqarrArr.push(itr.toString());
-                            }
-                        }
-                    } else {
-                        subqarrArr.push(parsedsubQArr[i].toLowerCase().trim());
-                    }
-                }
+                let subqarrArr = parseArraySubcodes(subqstrArr);
                 if (skipLogic) {
                     for (let i = 0; i < subqarrArr.length; i++) {
                         if (subqarrArr[i].includes('[')) {
@@ -515,10 +569,8 @@ const Output = props => {
                 if(langQ){
                     datacodes+=`\n\n%let language_question=${langQ};\n\nproc freq data=data;\n  tables &language_question / noprint out=data_lang;\nrun;\n\n%let languages_submitted = ;\n\nproc sql noprint;\n   select count(*) into :languages_submitted\n   from data_lang;\nquit;\n\ndata data_lang;\n  set data_lang;\n\nif &languages_submitted = 0 then Language_Warning= "No Languages Submitted.                                                             ";\nif &languages_submitted > 1 then Language_Warning= "Multiple languages submitted. Check if we have QST for the languages submitted.     ";\nif &languages_submitted = 1 then Language_Warning= "Only one language submitted. Check if language QST is received and submit as needed.";\n\nrun;\n\nTITLE "Language Check";\n\nproc sql;\nselect distinct Language_Warning\nfrom data_lang;\nquit;`
                 }
-                if(demoRefusals){
-                    const titleItems = demoRefusals.split(/,(?![^\[\]]*\])/);
-                    const refusals = [];
-                    const pattern = /([^[]+)\[([^|]+)\|([^\]]+)\]/;
+                if(demoRefusalItems.length > 0){
+                    const refusals = demoRefusalItems;
                     percentages='\n\n';
                     constantZero='*demo refusals;\n\n%let n_size = ; \n\nproc sql noprint;\n   select count(*) into :n_size\n   from data;\nquit;\n\ndata data;\n  set data end=last_observation;'
                     constantOne='\n\nrun;\n\ndata data; set data end=last_observation;\nif last_observation =1 then unhidden=1;\nrun;\n\nTITLE "Demo Refusals Summary";\n\nproc report data=data nowd;'
@@ -527,20 +579,6 @@ const Output = props => {
                     constantTwo='\n\nwhere unhidden=1;'
                     styling='\n\n';
                     constantThree='\n\nrun;';
-
-                    titleItems.forEach(item => {
-                    const match = item.match(pattern);
-                        if (match) {
-                            const titleText = match[1].trim();
-                            const questionNumber = match[2];
-                            const answerOptions = match[3].split(',');
-                            refusals.push({
-                            titleText,
-                            questionNumber,
-                            answerOptions
-                            });
-                        }
-                    });
 
                     refusals.forEach(item => {
                         percentages+=`if ${item.questionNumber} in (${item.answerOptions.join(',')}) then ${item.questionNumber}_refusal + 1;\n${item.questionNumber}_refusal_percent=cat(${item.questionNumber}_refusal/&n_size*100,"%");\n\n`

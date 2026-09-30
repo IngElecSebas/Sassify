@@ -12,16 +12,26 @@
     grid-template-columns: auto auto;
 }
 
+.CheckboxGroup {
+    padding: 0.25rem 0 0.5rem;
+}
+
+.CheckboxLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
 #group-3 {
     display: none;
 }
 
 .ButtonContainer {
     padding: 0.5rem;
-    position: absolute;
-    right: 50%;
-    transform: translateX(50%);
-    bottom: 1rem;
+    display: flex;
+    justify-content: center;
 }
 
 .RadioSpan {

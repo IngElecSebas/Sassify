@@ -54,6 +54,12 @@ const QuestionCard = props => {
                     <input type="text" id="slogic" defaultValue={props.qObject.skipLogic} readOnly />
                 </div>
             ) : null}
+            {props.qObject.extraCondition ? (
+                <div className={Styles.CardGroup}>
+                    <label htmlFor="slogic">Extra Condition:</label>
+                    <input type="text" id="slogic" defaultValue={props.qObject.extraCondition} readOnly />
+                </div>
+            ) : null}
             {props.qObject.otherCode ? (
                 <div className={Styles.CardGroup}>
                     <label htmlFor="slogic">Other Code:</label>
@@ -94,6 +100,24 @@ const QuestionCard = props => {
                 <div className={Styles.CardGroup}>
                     <label htmlFor="slogic">Demo Refusals:</label>
                     <input type="text" id="slogic" defaultValue={props.qObject.demoRefusals} readOnly />
+                </div>
+            ) : null}
+            {props.qObject.demoRefusalTitle ? (
+                <div className={Styles.CardGroup}>
+                    <label htmlFor="slogic">Refusal Title:</label>
+                    <input type="text" id="slogic" defaultValue={props.qObject.demoRefusalTitle} readOnly />
+                </div>
+            ) : null}
+            {props.qObject.demoRefusalPunch ? (
+                <div className={Styles.CardGroup}>
+                    <label htmlFor="slogic">Refusal Punch(es):</label>
+                    <input type="text" id="slogic" defaultValue={props.qObject.demoRefusalPunch} readOnly />
+                </div>
+            ) : null}
+            {props.qObject.demoRefusalSubQ ? (
+                <div className={Styles.CardGroup}>
+                    <label htmlFor="slogic">Refusal Sub-Q:</label>
+                    <input type="text" id="slogic" defaultValue={props.qObject.demoRefusalSubQ} readOnly />
                 </div>
             ) : null}
             {props.qObject.langQ ? (

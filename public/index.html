@@ -19,6 +19,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="description" content="Web site created using create-react-app" />
         <title>Sassify</title>
+        <script>
+            window.addEventListener('error', function (e) {
+                if (
+                    e.message === 'ResizeObserver loop completed with undelivered notifications.' ||
+                    e.message === 'ResizeObserver loop limit exceeded'
+                ) {
+                    e.stopImmediatePropagation();
+                }
+            });
+        </script>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
