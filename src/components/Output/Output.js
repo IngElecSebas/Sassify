@@ -557,42 +557,38 @@ const Output = props => {
                 code += `submitDatetonum=input(put(submitdate,yymmddn8.),8.);\n\nif (submitDatetonum < ${changeDate} ) & (${oldLogic}) then ${questionCode}_final="${codeTemplate.true}";\nelse if ~(submitDatetonum < ${changeDate}) & (${newLogic}) then ${questionCode}_final="${codeTemplate.true}";\nelse ${questionCode}_final="${codeTemplate.false}";\n\n`;
                 break;
             case 'datacodes':
-                let percentages='';
-                let constantZero='';
-                let constantOne='';
-                let columns='';
-                let titles='';
-                let constantTwo='';
-                let styling='';
-                let constantThree='';
                 datacodes+=`\n\nproc sort data=data out=data;\nby token;\nrun;\n\ndata data; set data;\nby token;\nif first.token=1 and last.token=1 then Duplicate_Check_Token="T    ";\nelse Duplicate_Check_Token="WRONG";\nrun;\n\nproc sort data=data out=data;\nby id;\nrun;\n\ndata data; set data;\nby id;\nif first.id=1 and last.id=1 then Duplicate_Check_ID="T    ";\nelse Duplicate_Check_ID="WRONG";\n\nif token=Unique_ID then Unique_ID_Check="T    ";\nelse Unique_ID_Check="WRONG";\n\nrun;\n\nTITLE "Duplicate Checks for Token & ID. Unique_ID_Check is to check if tokens = Unique_ID";\n\nproc sql;\nselect distinct Duplicate_Check_Token, Duplicate_Check_ID, Unique_ID_Check\nfrom data;\nquit;\n\n*summary of dates using date*day_of_week crosstab;\n\n*note for DATA team: the dates need to be in the standard date format. Numeric or string date formats will only output the counts, but not the day of week;\n\ndata data;\n  set data;\n  day_of_week = put(submitdate, downame.);\nrun;\n\nproc freq data=data;\nTITLE "Submit Date Summary";\ntables submitdate*day_of_week / nocum nopercent norow nocol;\nrun;\n`;
                 if(langQ){
                     datacodes+=`\n\n%let language_question=${langQ};\n\nproc freq data=data;\n  tables &language_question / noprint out=data_lang;\nrun;\n\n%let languages_submitted = ;\n\nproc sql noprint;\n   select count(*) into :languages_submitted\n   from data_lang;\nquit;\n\ndata data_lang;\n  set data_lang;\n\nif &languages_submitted = 0 then Language_Warning= "No Languages Submitted.                                                             ";\nif &languages_submitted > 1 then Language_Warning= "Multiple languages submitted. Check if we have QST for the languages submitted.     ";\nif &languages_submitted = 1 then Language_Warning= "Only one language submitted. Check if language QST is received and submit as needed.";\n\nrun;\n\nTITLE "Language Check";\n\nproc sql;\nselect distinct Language_Warning\nfrom data_lang;\nquit;`
                 }
-                if(demoRefusalItems.length > 0){
-                    const refusals = demoRefusalItems;
-                    percentages='\n\n';
-                    constantZero='*demo refusals;\n\n%let n_size = ; \n\nproc sql noprint;\n   select count(*) into :n_size\n   from data;\nquit;\n\ndata data;\n  set data end=last_observation;'
-                    constantOne='\n\nrun;\n\ndata data; set data end=last_observation;\nif last_observation =1 then unhidden=1;\nrun;\n\nTITLE "Demo Refusals Summary";\n\nproc report data=data nowd;'
-                    columns='\n\ncolumn ';
-                    titles='\n\n';
-                    constantTwo='\n\nwhere unhidden=1;'
-                    styling='\n\n';
-                    constantThree='\n\nrun;';
-
-                    refusals.forEach(item => {
-                        percentages+=`if ${item.questionNumber} in (${item.answerOptions.join(',')}) then ${item.questionNumber}_refusal + 1;\n${item.questionNumber}_refusal_percent=cat(${item.questionNumber}_refusal/&n_size*100,"%");\n\n`
-                        columns+=` ${item.questionNumber}_refusal_percent`;
-                        titles+=`define ${item.questionNumber}_refusal_percent / '${item.titleText}';\n`
-                        styling+=`compute ${item.questionNumber}_refusal_percent;\n   NumericValue = input(compress(${item.questionNumber}_refusal_percent, '%'), best12.);\n      if NumericValue >= 3 then\n         call define(_col_, "style", "style={background=rose}");\n      else\n         call define(_col_, "style", "style={background=lime}");\nendcomp;\n\n`
-                    })
-                }
-                datacodes+=constantZero+percentages+constantOne+columns+`${columns===''?'':';'}`+titles+constantTwo+styling+constantThree
                 break;
             default:
                 break;
         }
     }
+
+    if (demoRefusalItems.length > 0) {
+        let percentages = '\n\n';
+        let columns = '\n\ncolumn ';
+        let titles = '\n\n';
+        let styling = '\n\n';
+        demoRefusalItems.forEach(item => {
+            percentages+=`if ${item.questionNumber} in (${item.answerOptions.join(',')}) then ${item.questionNumber}_refusal + 1;\n${item.questionNumber}_refusal_percent=cat(${item.questionNumber}_refusal/&n_size*100,"%");\n\n`
+            columns+=` ${item.questionNumber}_refusal_percent`;
+            titles+=`define ${item.questionNumber}_refusal_percent / '${item.titleText}';\n`
+            styling+=`compute ${item.questionNumber}_refusal_percent;\n   NumericValue = input(compress(${item.questionNumber}_refusal_percent, '%'), best12.);\n      if NumericValue >= 3 then\n         call define(_col_, "style", "style={background=rose}");\n      else\n         call define(_col_, "style", "style={background=lime}");\nendcomp;\n\n`
+        });
+        datacodes +=
+            '\n\n*demo refusals;\n\n%let n_size = ; \n\nproc sql noprint;\n   select count(*) into :n_size\n   from data;\nquit;\n\ndata data;\n  set data end=last_observation;' +
+            percentages +
+            '\n\nrun;\n\ndata data; set data end=last_observation;\nif last_observation =1 then unhidden=1;\nrun;\n\nTITLE "Demo Refusals Summary";\n\nproc report data=data nowd;' +
+            columns + ';' +
+            titles +
+            '\n\nwhere unhidden=1;' +
+            styling +
+            '\n\nrun;';
+    }
+
     codeTemplate.finalCheck='';
     if (codeTemplate.midProcs2.length > 25) {
         codeTemplate.midProcs2 = codeTemplate.midProcs2.replace(',', '');

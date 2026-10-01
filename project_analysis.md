@@ -287,7 +287,7 @@ Campos nuevos en el objeto de pregunta: `demoRefusalTitle`, `demoRefusalPunch`, 
 Implementación en `Output.js`:
 
 1. Antes del loop principal se hace un **pre-escaneo** de todas las tarjetas que arma una lista `demoRefusalItems` (`{ titleText, questionNumber, answerOptions }`), sin importar el orden de las tarjetas.
-2. El caso `datacodes` genera el reporte "Demo Refusals Summary" a partir de esa lista con el mismo código de salida de antes.
+2. Después del loop principal, si la lista no está vacía, se genera el reporte "Demo Refusals Summary" con el mismo código de salida de antes. **No depende de la tarjeta Language Q Code**: las refusals aparecen en cuanto se guarda cada pregunta. Si la tarjeta existe, el reporte queda después de sus chequeos (duplicados → idioma → refusals).
 3. El parseo de subpreguntas de Array se extrajo a la función `parseArraySubcodes`, reutilizada por la generación del Array y por el pre-escaneo. Los sufijos con skip logic entre corchetes (`a[...]`) se limpian para nombrar la variable.
 
 Restricciones conocidas:
@@ -300,7 +300,8 @@ Restricciones conocidas:
 
 - El tipo `datacodes` se muestra ahora como **Language Q Code** (la clave interna `datacodes` no cambia).
 - Se eliminó su campo de Demo Refusals; solo queda el Language Q Code.
-- Sigue generando automáticamente los chequeos de duplicados (token/ID), el resumen de fechas y, si hay refusals en las tarjetas, el reporte de Demo Refusals.
+- Sigue generando los chequeos de duplicados (token/ID), el resumen de fechas y el chequeo de idioma. El reporte de Demo Refusals ya no depende de esta tarjeta.
+- Los botones dicen **Add Language Q Code** / **Update Language Q Code**.
 
 ### 6.4 Confirmación en Clear All
 

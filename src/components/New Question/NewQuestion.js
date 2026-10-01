@@ -1299,7 +1299,7 @@ const Question = React.memo(props => {
             </div>
             <div className={Styles.ButtonContainer}>
                 <button onClick={onAddQuestionHandler} className={Styles.AddButton}>
-                    {defaultQ!='datacodes' ? 'Add Question' : 'Add Data Team Codes'}
+                    {defaultQ!='datacodes' ? 'Add Question' : 'Add Language Q Code'}
                 </button>
             </div>
         </section>

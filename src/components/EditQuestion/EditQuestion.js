@@ -1305,7 +1305,7 @@ const EditQuestion = React.memo(props => {
             </div>
             <div className={Styles.ButtonContainer}>
                 <button onClick={onAddQuestionHandler} className={Styles.AddButton}>
-                    {defaultQ!='datacodes' ? 'Save Question' : 'Update Data Team Codes'}
+                    {defaultQ!='datacodes' ? 'Save Question' : 'Update Language Q Code'}
                 </button>
             </div>
         </section>
